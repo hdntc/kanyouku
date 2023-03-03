@@ -11,7 +11,7 @@ const normalizeDakuten = (unnorm: string) => {
     
     Array.from(unnorm).forEach((character, index) => {
         const currentCharCode = character.charCodeAt(0);
-        const nextCharCode = unnorm.charCodeAt(index + 1);
+        const nextCharCode = unnorm.charCodeAt(index + 1); // NaN if at end
         let nextChar = "";
 
         if(DAKUTEN_HANDAKUTEN.includes(currentCharCode)) { // When we find a combining dakuten or handakuten
@@ -19,7 +19,7 @@ const normalizeDakuten = (unnorm: string) => {
             let newCharCode: number;
             
             if(currentCharCode === 12441) { // If the character has a dakuten
-                newCharCode = plainCharCode + 1; // In the hiragana range 0x30F0 - 0x309F in unicode, the dakuten version of a kana comes after the plain version
+                newCharCode = plainCharCode + 1; // In the hiragana range 0x30F0 - 0x309F in unicode, the dakuten version of a kana comes directly after the plain version
             } else {
                 newCharCode = plainCharCode + 2; // For handakuten, its +2
             }
@@ -37,14 +37,12 @@ const normalizeDakuten = (unnorm: string) => {
     return result;
 };
 
-(async () => {
-    const browser = await puppeteer.launch();
-    const newPage = await browser.newPage();
+const getPhrasesOnPage = async (pageNumber: number, page: puppeteer.Page) => {
+    await page.goto(`https://cityworks.jp/?paged=${pageNumber}`);
 
-    await newPage.goto("https://cityworks.jp");
-    const entries = (await newPage.waitForSelector("#list")) as unknown as HTMLDivElement;
+    const entries = (await page.waitForSelector("#list")) as unknown as HTMLDivElement;
 
-    const rawPhrases: string[] = await newPage.evaluate(val => { // Run function inside browser context
+    const rawPhrases: string[] = await page.evaluate(val => { // Run function inside browser context
         const matches = val.textContent?.matchAll(/「[^「」]*」/g); // Find instances of substrings that contain a quote (see the webpage for why this is done)
 
         if(!matches) return [];
@@ -60,7 +58,18 @@ const normalizeDakuten = (unnorm: string) => {
     const normalizedPhrases = rawPhrases.map(s => normalizeDakuten(s));
     const noDuplicates = Array.from(new Set(normalizedPhrases));
 
-    console.log(noDuplicates);
+    return noDuplicates;
+};
+
+(async () => {
+    const browser = await puppeteer.launch();
+    const newPage = await browser.newPage();
+    let result: string[] = [];
+    
+    for(let pageNumber=1; pageNumber<=1337; pageNumber++) {
+        result = [...result, ...await getPhrasesOnPage(pageNumber, newPage)];
+        console.log(`After scraping ${pageNumber} pages:`, result);
+    }
 
     await browser.close();
 })();
