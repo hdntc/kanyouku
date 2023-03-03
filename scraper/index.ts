@@ -37,10 +37,6 @@ const normalizeDakuten = (unnorm: string) => {
     return result;
 };
 
-const x = normalizeDakuten('別件で恐縮ですが');
-console.log(x.length);
-console.log(x);
-
 (async () => {
     const browser = await puppeteer.launch();
     const newPage = await browser.newPage();
