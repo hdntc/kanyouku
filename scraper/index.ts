@@ -1,7 +1,7 @@
 import * as puppeteer from "puppeteer";
 
 /**
- * Normalizes a string with combining dakuten or handakuten so that there are no extra "combining" characters
+ * Normalizes a string with combining (han)dakuten so that a combination of "plain kana + combining mark" becomes just 1 character
  * @param unnorm The string with combining dakuten or handakuten
  * @returns The string with the dakuten/handakuten removed
  */
