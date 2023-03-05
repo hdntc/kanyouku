@@ -3,7 +3,7 @@ import * as puppeteer from "puppeteer";
 /**
  * Normalizes a string with combining (han)dakuten so that a combination of "plain kana + combining mark" becomes just 1 character
  * @param unnorm The string with combining dakuten or handakuten
- * @returns The string with the dakuten/handakuten removed
+ * @returns The string with the dakuten/handakuten combining character removed
  */
 const normalizeDakuten = (unnorm: string) => {
     const DAKUTEN_HANDAKUTEN: [number, number] = [12441, 12442];
@@ -62,7 +62,7 @@ const getPhrasesOnPage = async (pageNumber: number, page: puppeteer.Page) => {
 };
 
 (async () => {
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({headless: false});
     const newPage = await browser.newPage();
     let result: string[] = [];
     
