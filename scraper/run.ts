@@ -31,7 +31,6 @@ export const run = async ({ maxConcurrency, maxNumberPhrases }: RunOptions) => {
     })
 
     await cluster.task(async ({page, data: {pageNumber, nextPageNumber}}) => {
-        console.log(pageNumber, nextPageNumber);
         const phrases = await getPhrasesOnPage(pageNumber, page);
         if(maxNumberPhrases && result.length + phrases.length > maxNumberPhrases) {
             isStopped = true;
@@ -41,7 +40,6 @@ export const run = async ({ maxConcurrency, maxNumberPhrases }: RunOptions) => {
                 time: 0.001 * ((new Date()).getTime() - startTime.getTime()), 
                 numberOfPhrases: result.length 
             });
-            console.log(phrasesAtTime);
 
             if(!isStopped) {
                 cluster.queue({
