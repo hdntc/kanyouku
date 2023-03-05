@@ -1,4 +1,5 @@
 import * as puppeteer from "puppeteer";
+import { Cluster } from "puppeteer-cluster";
 
 /**
  * Normalizes a string with combining (han)dakuten so that a combination of "plain kana + combining mark" becomes just 1 character
@@ -62,14 +63,38 @@ const getPhrasesOnPage = async (pageNumber: number, page: puppeteer.Page) => {
 };
 
 (async () => {
-    const browser = await puppeteer.launch({headless: false});
-    const newPage = await browser.newPage();
-    let result: string[] = [];
-    
-    for(let pageNumber=1; pageNumber<=1337; pageNumber++) {
-        result = [...result, ...await getPhrasesOnPage(pageNumber, newPage)];
-        console.log(`After scraping ${pageNumber} pages:`, result);
-    }
+    const cluster: Cluster<number, void> = await Cluster.launch({
+        concurrency: Cluster.CONCURRENCY_PAGE,
+        maxConcurrency: 5,
+        puppeteerOptions: {
+            headless: false
+        }
+        
+    });
+    let result: String[] = [];
+    let phrasesAtTime: {time: number, numberOfPhrases: number}[] = []; // time: seconds since start
+    let startTime: Date = new Date();
 
-    await browser.close();
+    cluster.on("taskerror", (err, data, willRetry) => {
+        console.error(err);
+        console.log("error occured with data:",data);
+    })
+
+    await cluster.task(async ({page, data: pageNumber}) => {
+        const phrases = await getPhrasesOnPage(pageNumber, page);
+        result = [...result, ...phrases];
+        phrasesAtTime.push({ 
+            time: 0.001 * ((new Date()).getTime() - startTime.getTime()), 
+            numberOfPhrases: phrases.length 
+        });
+    });
+
+    for(let i=0;i<=1337;i++) {
+        cluster.queue(i);
+    };
+
+    await cluster.idle();
+    await cluster.close();
+
+    
 })();
